@@ -1,19 +1,12 @@
 # claude-session-inbox
 
-Send prompts into a **Claude Code** session from outside it — from another agent, a script, a cron job, or any service that can write a file.
+Send prompts into a running **Claude Code** session from outside it — from another agent, a script, a cron job, or any service that can write a file.
 
-There are two ways to do it:
-
-| Mode | Script | Needs | Works when app is closed? |
-|---|---|---|---|
-| **A. Inbox + Monitor** (recommended) | `inbox-watcher.sh` | A running Claude Code session | No |
-| **B. CLI resume** | `wake-session.ps1` | `claude` CLI logged in with credit | Yes |
+No API key or extra credit is used: delivery happens inside the session you already have open.
 
 ---
 
 ## How it works
-
-### Mode A — Inbox + Monitor
 
 ```
 other agent / service                Claude Code session
@@ -30,23 +23,9 @@ other agent / service                Claude Code session
 2. For each new `.txt` file it prints one line: `INBOX <filename>: <contents>`, then moves the file to `inbox/sent/` (timestamped) so it is never processed twice.
 3. Claude Code's **Monitor** tool turns every stdout line of a script into a notification inside the session, so Claude is woken up and sees the message.
 
-No API key or extra credit is used — delivery happens inside the session you already have open.
-
-### Mode B — CLI resume
-
-`wake-session.ps1` runs:
-
-```
-claude --resume <session-id> -p "<prompt>"
-```
-
-which appends the prompt (and Claude's reply) to that session's transcript. This bills the account the `claude` CLI is logged in to.
-
 ---
 
 ## Usage
-
-### Mode A (recommended)
 
 1. Clone this repo somewhere permanent, e.g. `C:\tools\claude-session-inbox`.
 2. In your Claude Code session, ask Claude:
@@ -54,6 +33,8 @@ which appends the prompt (and Claude's reply) to that session's transcript. This
    > Monitor `bash C:/tools/claude-session-inbox/inbox-watcher.sh C:/tools/claude-session-inbox/inbox` with the maximum timeout, and re-arm it whenever it expires.
 
 3. From anywhere, drop a message:
+
+   Bash:
 
    ```bash
    echo "who is messi" > C:/tools/claude-session-inbox/inbox/q1.txt
@@ -74,14 +55,7 @@ which appends the prompt (and Claude's reply) to that session's transcript. This
 
 Within ~1 second the session receives `INBOX q1.txt: who is messi`.
 
-### Mode B
-
-```powershell
-# one-off, optionally delayed (s/m/h)
-.\wake-session.ps1 -SessionId <id> -Prompt "who is messi" -Delay 20s
-```
-
-Run from the folder the session was started in (or pass `-Dir`) — sessions are stored per project folder. Find a session ID with `claude --resume` (interactive picker) or in `~/.claude/projects/<folder>/<id>.jsonl`.
+The inbox folder defaults to `./inbox` if no argument is given. Requires `bash` (Git Bash on Windows).
 
 ---
 
@@ -91,13 +65,5 @@ Run from the folder the session was started in (or pass `-Dir`) — sessions are
 - **Write atomically if messages are large**: write to `msg.tmp`, then rename to `msg.txt`. The watcher only reads `*.txt` and waits 300 ms before reading.
 - **One message per file.** Newlines are flattened to spaces in the notification.
 - **Monitor expires** (max 30 min per arm). Ask Claude to re-arm on expiry for long watches. Files dropped while it is off are not lost — they are picked up on the next start.
-- **The session must be running** for Mode A. Use Mode B if you need to reach a closed session.
+- **The session must be running.** If the app or session is closed, nothing listens; files wait in `inbox/` until the watcher is started again.
 - **Security:** anyone who can write to the inbox can send Claude text. Claude treats inbox content as *data*, not as your own commands — it will answer questions and do harmless work, but should confirm with you before side-effecting actions (sending, deleting, purchasing, running unknown code). Keep the inbox in a folder only you and your trusted agents can write to.
-- **Mode B "Credit balance is too low"**: the `claude` CLI account has no credit. Check `claude /login` or any `ANTHROPIC_API_KEY` in your environment.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `inbox-watcher.sh` | Mode A watcher — emits one line per new inbox file |
-| `wake-session.ps1` | Mode B — resume a session and send one prompt, with optional delay |
