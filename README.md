@@ -7,7 +7,7 @@ There are two ways to do it:
 | Mode | Script | Needs | Works when app is closed? |
 |---|---|---|---|
 | **A. Inbox + Monitor** (recommended) | `inbox-watcher.sh` | A running Claude Code session | No |
-| **B. CLI resume** | `wake-session.ps1`, `watch-prompts.ps1` | `claude` CLI logged in with credit | Yes |
+| **B. CLI resume** | `wake-session.ps1` | `claude` CLI logged in with credit | Yes |
 
 ---
 
@@ -40,7 +40,7 @@ No API key or extra credit is used — delivery happens inside the session you a
 claude --resume <session-id> -p "<prompt>"
 ```
 
-which appends the prompt (and Claude's reply) to that session's transcript. `watch-prompts.ps1` watches an inbox folder and calls `wake-session.ps1` for each file. This bills the account the `claude` CLI is logged in to.
+which appends the prompt (and Claude's reply) to that session's transcript. This bills the account the `claude` CLI is logged in to.
 
 ---
 
@@ -79,10 +79,6 @@ Within ~1 second the session receives `INBOX q1.txt: who is messi`.
 ```powershell
 # one-off, optionally delayed (s/m/h)
 .\wake-session.ps1 -SessionId <id> -Prompt "who is messi" -Delay 20s
-
-# continuous watcher
-.\watch-prompts.ps1 -SessionId <id>            # watches .\inbox
-.\watch-prompts.ps1 -SessionId <id> -DryRun    # print only, don't send
 ```
 
 Run from the folder the session was started in (or pass `-Dir`) — sessions are stored per project folder. Find a session ID with `claude --resume` (interactive picker) or in `~/.claude/projects/<folder>/<id>.jsonl`.
@@ -105,4 +101,3 @@ Run from the folder the session was started in (or pass `-Dir`) — sessions are
 |---|---|
 | `inbox-watcher.sh` | Mode A watcher — emits one line per new inbox file |
 | `wake-session.ps1` | Mode B — resume a session and send one prompt, with optional delay |
-| `watch-prompts.ps1` | Mode B — watch inbox and send each file via `wake-session.ps1` |
